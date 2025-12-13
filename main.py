@@ -1,12 +1,15 @@
 """
-Jeu de Battaille-navale
+Jeu de Bataille-navale
 
-PRE-ALPHA 1
+PRE-ALPHA 2
 
 Fonctions:
 - Affichage du plateau de jeu avec information de coordination
 - Affichage des bateaux sur 4 axes
 - Affichage des tirs réussis ou ratés
+- Calcul du score
+- Définir une victoire à partir d'un score
+
 
 """
 
@@ -134,10 +137,59 @@ def make_board(ships:list[list], hits:list[list], ln:int=COT)->str:
      
     return board_string
 
+def get_score(opponent_ships:list[list], hits:list[list])->int:
+    """Une fonction qui calcule le score d'un joueur basé sur la position de ses coups tirés et des bateaux de l’adversaire
+    Si le score est égal à:
+        sum(la longueur de chaques bateaux adverse) + (nombres de bateaux * 5)
+    alors l'utilisateur à gagné la partie
 
+    Args:
+        opponent_ships (list[list]): La liste des bateaux de l'adversaire
+        hits (list[list]): La liste de ses coups tirés
 
+    Returns:
+        int: Le score
+    """
+    score = 0
+    
+        
+    #Etablir la liste des postions de chaques coups tirés
+    hits_pos = [[hit[1],hit[2]] for hit in hits]
+    
+    #Regarder pour chaques bateaux
+    for ship in opponent_ships:
+        counter = 0
+        #Parcourir le bateau
+        x = ship[2]
+        y = ship[3]
+        for _ in range(ship[0]):
+            if [x,y] in hits_pos:
+                score += 1
+                counter += 1
+            
+            #Parcourir le bateau    
+            x += DIR[ship[1]][0]
+            y += DIR[ship[1]][1]
+                
+        if counter == ship[0]:
+            #Ajout d'un bonus si tout un bateau est touché
+            score += 5
+            
+    return score
 
+def has_win(opponent_ships:list[list], hits:list[list])->bool:
+    """Retourne si l'utilisateur a gagné la partie
 
+    Args:
+        opponent_ships (list[list]): La liste des bateaux de l'adversaire
+        hits (list[list]): La liste de ses coups tirés
+
+    Returns:
+        bool: Si l'utilisateur a gagné la partie
+    """
+    
+    return (sum(ship[0] for ship in opponent_ships)+5*len(opponent_ships) == get_score(opponent_ships, hits))
+    
 
 
     
@@ -172,5 +224,10 @@ Format attendu pour la liste des tirs
 
 """
 
+ships=[[5,1,2,1]]
 
-print(make_board([[5,1,2,1],[3,2,5,6]],[[True, 2,2],[False, 6, 3], [True, 8, 4]]))
+hits = [[True, 2,2],[False, 6, 3], [True, 8, 4],[True,2,1],[True,2,3],[True,2,4],[True,2,5]]
+
+print(make_board(ships,hits))
+print("Score: "+str(get_score(ships,hits)))
+print("A gagné: ", has_win(ships,hits))
