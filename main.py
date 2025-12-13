@@ -13,13 +13,16 @@ Fonctions:
 
 """
 
+####################
+#### Constantes ####
+####################
 
-#### Constantes
+
 COT = 12 #Taille de coté du tableau
 WATER = '□ ' #Fond du tableau
-MISSED = '□ '
-TOUCHED = '⨂ '
-SHIP = '■ '
+MISSED = '□ ' # Tir touché
+TOUCHED = '⨂ ' # Tir raté
+SHIP = '■ ' # Bateau
 
 
 #Dictionnaire utilisé pour tracer les bateaux
