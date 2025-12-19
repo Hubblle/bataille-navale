@@ -1,7 +1,9 @@
+import os
+
 """
 Jeu de Bataille-navale
 
-PRE-ALPHA 2
+ALPHA 1
 
 Fonctions:
 - Affichage du plateau de jeu avec information de coordination
@@ -10,6 +12,8 @@ Fonctions:
 - Calcul du score
 - Définir une victoire à partir d'un score
 
+Fonction de la boucle principale:
+- Placement interactif des bateaux
 
 """
 
@@ -36,9 +40,47 @@ DIR = [
 
 LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]
 
-###################
-#### Fonctions ####
-###################
+
+#Ici le r evite les cratères échappatoires
+logo = r"""
+$$$$$$$\             $$\               $$\ $$\ $$\                                                         $$\           
+$$  __$$\            $$ |              \__|$$ |$$ |                                                        $$ |          
+$$ |  $$ | $$$$$$\ $$$$$$\    $$$$$$\  $$\ $$ |$$ | $$$$$$\         $$$$$$$\   $$$$$$\ $$\    $$\ $$$$$$\  $$ | $$$$$$\  
+$$$$$$$\ | \____$$\\_$$  _|   \____$$\ $$ |$$ |$$ |$$  __$$\        $$  __$$\  \____$$\\$$\  $$  |\____$$\ $$ |$$  __$$\ 
+$$  __$$\  $$$$$$$ | $$ |     $$$$$$$ |$$ |$$ |$$ |$$$$$$$$ |       $$ |  $$ | $$$$$$$ |\$$\$$  / $$$$$$$ |$$ |$$$$$$$$ |
+$$ |  $$ |$$  __$$ | $$ |$$\ $$  __$$ |$$ |$$ |$$ |$$   ____|       $$ |  $$ |$$  __$$ | \$$$  / $$  __$$ |$$ |$$   ____|
+$$$$$$$  |\$$$$$$$ | \$$$$  |\$$$$$$$ |$$ |$$ |$$ |\$$$$$$$\        $$ |  $$ |\$$$$$$$ |  \$  /  \$$$$$$$ |$$ |\$$$$$$$\ 
+\_______/  \_______|  \____/  \_______|\__|\__|\__| \_______|$$$$$$\\__|  \__| \_______|   \_/    \_______|\__| \_______|
+                                                             \______|                                                    
+"""
+
+
+
+
+BOATS = {
+    "Destroyer" : [5]
+    #"Cruiser" : [3,3],
+    #"Navette" : [4]
+}
+
+
+
+
+
+##############################
+#### Fonctions génériques ####
+##############################
+
+def clear_screen()->None:
+    """Une fonction qui permet de vider le terminal
+    """
+    
+    #Execute une commande dans un sous-terminal et renvoie la sortie au terminal actuel, ici, la sortie va vider le terminal
+    os.system('clear' if os.name == 'posix' else 'cls')
+    # Dans le cas ou le nom du module est posix, on execute clear (comme sous les systems Linux par exemple), dans le cas contraire (Windows) la commande est cls
+
+
+
 
 def line(n=1)->None:
     """Fonction qui permet le saut de n lignes
@@ -58,10 +100,32 @@ def num_to_letter(num:int)->str:
     Returns:
         str: La (ou les) lettre(s) correspondant(ent)
     """
-    if num <= 26:
-        return LETTERS[num]
     
-    #TODO: Le faire marcher pour n'importe quel nombre
+    letter = [""]
+        
+    def convert(num):
+        if num <= 26:
+            letter[0] += LETTERS[num]
+            
+        else:
+            letter[0] += LETTERS[num//26]
+            letter[0] += convert(num%26)
+        
+        
+    convert(num)
+    return letter[0]
+    
+def letter_to_num(letter:str)->int:
+    """Une fonction qui va convertir une lettre du tableau en nombre
+
+    Args:
+        letter (str): La lettre à convertir
+
+    Returns:
+        int: le numéro corespondant
+    """
+    
+    return LETTERS.index(letter)+1
 
 
 def replace_at(board:list[list], x:int, y:int, char:str)->list:
@@ -193,9 +257,19 @@ def has_win(opponent_ships:list[list], hits:list[list])->bool:
     
     return (sum(ship[0] for ship in opponent_ships)+5*len(opponent_ships) == get_score(opponent_ships, hits))
     
+def title(text:str)->str:
+    """Une fonction qui permet de générer des titres encadrés
 
+    Args:
+        text (str): Le texte à mettre dans l'encadrement
 
+    Returns:
+        str: L'encadrement
+    """
     
+    return "#"*(len(text)+8) + "\n" + f"### {text} ###\n" +"#"*(len(text)+8) + "\n"
+    
+        
 
 
 ######################
@@ -227,10 +301,263 @@ Format attendu pour la liste des tirs
 
 """
 
-ships=[[5,1,2,1]]
 
-hits = [[True, 2,2],[False, 6, 3], [True, 8, 4],[True,2,1],[True,2,3],[True,2,4],[True,2,5]]
+##########################
+#### Mécanique du jeu ####
+##########################
 
-print(make_board(ships,hits))
-print("Score: "+str(get_score(ships,hits)))
-print("A gagné: ", has_win(ships,hits))
+## Variables
+
+users = {
+    "user_1":{
+        "name":"",
+        "ship" : [],
+        "hit" : [],
+        "score" : 0
+        
+    },
+    "user_2":{
+        "name":"",
+        "ship" : [],
+        "hit" : [],
+        "score" : 0
+        
+    }
+}
+
+
+
+
+def place(name:str, ship_list:list)->None:
+    """Fonction qui permet de définir le placement des bateaux d'un joueur
+
+    Args:
+        name (str): Le nom du joueur
+        boat_list (list): La liste des bateaux du joueur
+    """
+    
+    def header():
+        #Fonction qui affiche les headers du menu
+        print(title("Les Bateaux"))
+        line(2) 
+    
+    def infos():
+        #Affiche des infos quant au placement des bateaux
+        print("## Comment placer un bateau ?\n",
+                " -> Entrez la coordonnée de début du bateau\n",
+                " -> Entrez la direction du bateau\n",
+                "   Les directions sont:\n",
+                "    -> 0: ↑\n",
+                "    -> 1: ↓\n",
+                "    -> 2: →\n",
+                "    -> 3: ←\n"
+                
+              )
+
+    print(f"Bienvenue {name}, nous allons procéder au placement de vos batteaux !")
+    print(title("Les Bateaux"))
+    line(2)        
+    
+    liste = ""
+    for boat in BOATS:
+        liste += f" - {boat} -> Longueur {BOATS[boat][0]} (x{len(BOATS[boat])})\n"
+    
+    print(liste)
+    line()
+    input("Appuyez sur Entrée pour commencer ↵")
+
+    
+    for boat in BOATS:
+        
+        
+        for i in range(len(BOATS[boat])):
+            clear_screen()
+            header()
+            print(f"## Mise en place du {boat} numéro {i+1} ##")
+            print(f"-> Longueur = {BOATS[boat][0]}")
+            line()
+            #affichage du plateau avec les bateaux actuels
+            print(make_board(ship_list, []))
+            line()
+            
+            #afficher le tuto
+            infos()
+            
+            #demander le début
+            while True:
+                cor = input("Entrez les coordonnées du début du bateau (Format: A1) -> ")
+                #Traiter l'input
+                
+                letter = cor[0] #Première lettre
+                x = letter_to_num(letter.upper())
+                
+                y = int(cor[1:])
+                
+                #Verifier les maximums
+                if x > COT:
+                    print("Erreur; votre lettre dépasse le maximum !")
+                    input("Appuyez sur Entrée pour recommencer ↵")
+                
+                elif y > COT:
+                    print("Erreur votre nombre dépasse le maximum !")
+                    input("Appuyez sur Entrée pour recommencer ↵")
+                
+                elif get_score(ship_list, [[False, x, y]]):
+                    print("Erreur; votre bateau est en collision avec un autre !")
+                    input("Appuyez sur Entrée pour recommencer ↵")
+                
+                else:
+                    line()
+                    break
+                
+            #demander la direction
+            while True:
+                clear_screen()
+                header()
+                print(f"## Mise en place du {boat} numéro {i+1} ##")
+                print(f"-> Longueur = {BOATS[boat][0]}")
+                
+                line()
+                
+                print(make_board(ship_list, [[True,x,y]]))
+                
+                infos()
+                
+                direc = int(input("Entrez la direction du bateau (0/1/2/3) -> "))
+                
+                #Verifier que le bateau ne sort pas du plateau
+                final_x = x
+                final_y = y
+                
+                colision = False
+                for _ in range(BOATS[boat][0]):
+                    #Verifier en même temps que le bateau n'en touche pas un autre:
+                    if get_score(ship_list, [[True, final_x, final_y]]) != 0: #Le score doit être 0 si le bout du bateau n'en touche pas un autre
+                        colision = True
+                    
+                    #Incrémenter les valeurs
+                    final_x += DIR[direc][0]
+                    final_y += DIR[direc][1]
+                    
+                if colision:
+                    print("Erreur: Votre bateau touche un autre bateau !")
+                    input("Appuyez sur Entrée pour recommencer ↵")
+                    continue
+                    
+
+                if final_x < 0 or final_x > COT:
+                    print("Erreur: Votre bateau sort du plateau !")
+                    input("Appuyez sur Entrée pour recommencer ↵")
+                    
+                elif final_y < 0 or final_y > COT:
+                    print("Erreur: Votre bateau sort du plateau !")
+                    input("Appuyez sur Entrée pour recommencer ↵")
+                    
+                
+                else:
+                    break
+            #Ajouter le bateau à la liste:
+            ship_list.append([BOATS[boat][0], direc, x, y])
+            
+    clear_screen()
+    header()
+    print(f"### {name} Voici le placement de vos bateaux !")
+    line()
+    print(make_board(ship_list,[]))
+    line(2)
+    print("Vous pouvez:\n  -> Appuyer sur Entrée pour valider ↵\n  -> Appuyer sur R puis Entrée pour recommencer !")
+    entry = input(">>> ")
+    
+    if entry.capitalize() == "R":
+        clear_screen()
+        place(name, ship_list) #Relancer la fonction si le joueur le demande
+    
+    #Fin de la fonction si l'utilisateur ne souhaite par recommencer
+        
+
+
+
+
+    
+
+
+
+if __name__ == "__main__":
+    clear_screen()
+    
+    print(logo)
+    print("""#### Bienvenue dans le jeu de Bataille navale !
+Répondez aux question quand vous êtes prêt pour commencer.""")
+    line(2)
+    
+    #Demande le nom des utilisateurs
+    for i in range(2):
+        if i == 0:
+            users["user_1"]["name"] = input("Entrez le nom du joueur 1: ")
+            line()
+        else:
+            users["user_2"]["name"] = input("Entrez le nom du joueur 2: ")
+    
+    
+    #Placer les bateaux
+    for user in users:
+    
+        clear_screen()
+        place(users[user]["name"], users[user]["ship"])
+        clear_screen()
+
+
+    
+    
+    clear_screen()
+    print(title("Informations"))
+    
+    print(">>> Tous les bateaux sont placés !")
+    line()
+    
+    print("Le jeu va donc pouvoir commencer, mais avant, voici les règles: ")
+    print("  1. Le jeu se déroule en tours-par-tours, les deux joueurs doivent se passer le clavier à la fin de leur tour, et ne pas regarder l'écran lorsque ce n'est pas leur tour.")
+    print("  2. À chaque tour, le joueur va choisir une position ou lancer son missile, si il touche un bateau, il peu alors rejouer.")
+    print("  3. Un score est établie au cour de la partie;")
+    print("     - Un bateau touché vaut 1 point")
+    print("     - Un bateau coulé vaut 5 points")
+    print("     -> Le score permet un suivi des performance sur plusieurs partie en les additionnant")
+    line()
+    print("  4. Le premier joueur qui atteins le maximum de score (tous les bateaux coulés gagne la partie)")
+    
+    print(f">>> Le jeu va commencer par {users['user_1']['name']} !")
+    input(f"Appuyez sur Entrée pour commencer ↵")
+
+    
+    #Boucle principale
+    while True:
+        for user in users:
+            #Définir les variables
+            name = users[user]["name"]
+            ship = users[user]["ship"]
+            hit = users[user]["hit"]
+            
+            
+            clear_screen()
+            
+            def header():
+                print(title("Tour de "+name))
+                print(f"Informations :\n  > Score: "+users[user]["score"])
+               
+                
+            line(3)
+            input(f">>> Appuyez sur Entrée lorsque c'est {name} qui a le clavier !")
+            
+            # Afficher la session de tir
+            clear_screen()
+                 
+            
+            
+            
+        
+        
+            
+    
+        
+    
+    
