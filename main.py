@@ -402,7 +402,7 @@ def place(name:str, ship_list:list)->None:
                     print("Erreur votre nombre dépasse le maximum !")
                     input("Appuyez sur Entrée pour recommencer ↵")
                 
-                elif get_score(ship_list, [[False, x, y]]):
+                elif get_score(ship_list, [[False, x, y]]) != 0:
                     print("Erreur; votre bateau est en collision avec un autre !")
                     input("Appuyez sur Entrée pour recommencer ↵")
                 
@@ -470,6 +470,7 @@ def place(name:str, ship_list:list)->None:
     
     if entry.capitalize() == "R":
         clear_screen()
+        ship_list = [] #vider la liste avant de relancer la fonction
         place(name, ship_list) #Relancer la fonction si le joueur le demande
     
     #Fin de la fonction si l'utilisateur ne souhaite par recommencer
