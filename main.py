@@ -3,7 +3,7 @@ import os
 """
 Jeu de Bataille-navale
 
-ALPHA 1
+ALPHA 2
 
 Fonctions:
 - Affichage du plateau de jeu avec information de coordination
@@ -14,6 +14,8 @@ Fonctions:
 
 Fonction de la boucle principale:
 - Placement interactif des bateaux
+- Tir interactif
+- Evaluation du tir
 
 """
 
@@ -21,12 +23,17 @@ Fonction de la boucle principale:
 #### Constantes ####
 ####################
 
+SIGN_DICT={
+    "WATER" : '□ ', #Fond du tableau
+    "MISSED" : '□ ', # Tir raté
+    "TOUCHED" : '⨂ ', # Tir touché
+    "SHIP" : '■ ', # Bateau
+    "SANK_SHIP" : '▨ '
+}
+
 
 COT = 12 #Taille de coté du tableau
-WATER = '□ ' #Fond du tableau
-MISSED = '□ ' # Tir touché
-TOUCHED = '⨂ ' # Tir raté
-SHIP = '■ ' # Bateau
+
 
 
 #Dictionnaire utilisé pour tracer les bateaux
@@ -104,13 +111,14 @@ def num_to_letter(num:int)->str:
     letter = [""]
         
     def convert(num):
-        if num <= 26:
+        if num <= 25:
             letter[0] += LETTERS[num]
             
         else:
-            letter[0] += LETTERS[num//26]
-            letter[0] += convert(num%26)
+            convert(num//26)
+            convert(num%26)
         
+    
         
     convert(num)
     return letter[0]
@@ -136,7 +144,7 @@ def replace_at(board:list[list], x:int, y:int, char:str)->list:
         x (int): La coordonnée x
         y (int): La coordonnée y
 
-    Retourne:
+    Returns:
         list: La liste modifiée
     """
     
@@ -149,22 +157,33 @@ def replace_at(board:list[list], x:int, y:int, char:str)->list:
     return board
 
 
-# draw_board(ln:int=COT)
-#                    ^ on définie la valeur sur la constante locale par défaut
-def make_board(ships:list[list], hits:list[list], ln:int=COT)->str:
+
+def make_board(ships:list[list], hits:list[list], sank_ships:list = [],SIGNS : dict = SIGN_DICT, ln:int=COT)->str:
     """Fonction permettant d'afficher le tableau du jeu
     
     Args:
-        ln (int, optionel) : (length) taille de coté du tableau
         ships (list): la listes des placements de chaques bateaux
         hits (list): la liste des coups tirés
+        sank_ships (list, optionel): la liste des bateaux coulés
+        SIGNS (dict, optionel): les symboles a utiliser
+        ln (int, optionel) : (length) taille de coté du tableau
         
-    Retourne:
+    Returns:
         str: Le tableau formaté sans header ni footer
     
     """
+    
+    #Définir les symboles
+    WATER = SIGNS["WATER"]
+    SHIP = SIGNS["SHIP"]
+    TOUCHED = SIGNS["TOUCHED"]
+    MISSED = SIGNS["MISSED"]
+    SANK_SHIP = SIGNS["SANK_SHIP"]
+    
+    
+    
     #Faire une liste qui représente le tableau
-    board = list([WATER]*ln for _ in range(ln))
+    board = [[WATER]*ln for _ in range(ln)]
     
     #tracer chaque bateau
     for ship in ships:
@@ -184,6 +203,21 @@ def make_board(ships:list[list], hits:list[list], ln:int=COT)->str:
     #tracer chaque tir
     for hit in hits:
         replace_at(board, hit[1], hit[2], TOUCHED if hit[0] else MISSED)
+        
+    #tracer les bateaux coulés si il y en a
+    for ship in sank_ships:
+        #Récupérer les coordonnées
+        x = ship[2]
+        y = ship[3]
+        replace_at(board, x, y, SHIP)
+        
+        #Repetition sur toute la longueur du bateau
+        for _ in range(ship[0]-1): #On retire 1 car le premier carré est déjà tracé
+            #Appliquer la transformation adaptée à la direction choisie
+            x += DIR[ship[1]][0]
+            y += DIR[ship[1]][1]
+            
+            replace_at(board, x, y, SANK_SHIP)
     
     #Convertir en string
     #Générer la partie haute
@@ -245,7 +279,7 @@ def get_score(opponent_ships:list[list], hits:list[list])->int:
     return score
 
 def has_win(opponent_ships:list[list], hits:list[list])->bool:
-    """Retourne si l'utilisateur a gagné la partie
+    """Returns si "l'utilisateur a gagné la partie"
 
     Args:
         opponent_ships (list[list]): La liste des bateaux de l'adversaire
@@ -313,6 +347,7 @@ users = {
         "name":"",
         "ship" : [],
         "hit" : [],
+        "sank_ship": [],
         "score" : 0
         
     },
@@ -320,6 +355,7 @@ users = {
         "name":"",
         "ship" : [],
         "hit" : [],
+        "sank_ship": [],
         "score" : 0
         
     }
@@ -328,7 +364,7 @@ users = {
 
 
 
-def place(name:str, ship_list:list)->None:
+def place_ui(name:str, ship_list:list)->None:
     """Fonction qui permet de définir le placement des bateaux d'un joueur
 
     Args:
@@ -471,12 +507,192 @@ def place(name:str, ship_list:list)->None:
     if entry.capitalize() == "R":
         clear_screen()
         ship_list = [] #vider la liste avant de relancer la fonction
-        place(name, ship_list) #Relancer la fonction si le joueur le demande
+        place_ui(name, ship_list) #Relancer la fonction si le joueur le demande
     
     #Fin de la fonction si l'utilisateur ne souhaite par recommencer
         
+def shoot_ui(name:str, ship_list:list, hit:list, opponent_hit:list, sank_ship:list)-> list:
+    """Fonction qui permet de tirer un missile
+
+    Args:
+        name (str): Le nom de l'utilisateur
+        ship_list (list): La liste de ses bateaux
+        hit (list): La liste de ses tirs
+        opponent_hit (list): La liste des tirs de l'adversaire
+        sank_ship: la liste des bateaux coulés
+    
+    Returns:
+        list: Le tir non évalué
+    """
+    
+    def header():
+        print(title("Session de tir !"))
+        line()
+        print(f"{name} c'est à vous de tirer votre missile !")
+        
+        
+    def infos():
+        print("## Comment tirer un missile ?")
+        print("  1. Entrez les coordonnées de la cible (format A1)")
+        print("  2. Confirmez les coordonnées et admirez !")
+        
+    header()
+    line()
+    infos()
+    
+    line()
+    
+    print("## Vos bateaux:")
+    print(make_board(ship_list, opponent_hit))
+    
+    line(2)
+    
+    print("## Votre plateau de visée :")
+    print(make_board([], hit, sank_ship))
+    
+    
+    line()
+    
+    while True:
+        cor = input("Coordonnées >>> ")
+        
+        #Traiter l'input
+                
+        letter = cor[0] #Première lettre
+        x = letter_to_num(letter.upper())
+        
+        y = int(cor[1:])
+        
+        #Verifier les maximums
+        if x > COT:
+            print("Erreur; votre lettre dépasse le maximum !")
+            input("Appuyez sur Entrée pour recommencer ↵")
+        
+        elif y > COT:
+            print("Erreur votre nombre dépasse le maximum !")
+            input("Appuyez sur Entrée pour recommencer ↵")
+            
+        else:
+            break
+        
+    clear_screen()
+    header()
+    
+    line()
+    
+    print("## Confirmation de tir /!\\")
+    
+    #Afficher un résumé du tir
+    
+    #Faire une copie du dictionaire original
+    temp_sign = SIGN_DICT.copy()
+    
+    temp_sign["SHIP"] = "🎇" #Modifier le symbole du bateau pour l'utiliser en tant que pointeur du tir
+    
+    temp_ship = [[1, 0, x, y]] # Bateau temporaire pour modéliser le tir
+    
+    print(make_board(temp_ship, hit, sank_ship, temp_sign))
+    
+    print("Appuyez sur Entrée pour confirmer le lancement du missile; ou entrez 'R' et appuyez sur Entrée pour replacer votre tir")
+    
+    user_input  = input(">>> ")
+    
+    if user_input.capitalize() == "R":
+        #Boucler dans la fonction
+        
+        return shoot_ui(name, ship_list, hit, opponent_hit, sank_ship)
+    
+    return [None, x, y] #Retourne le tir non évalué 
+    
+    
+
+    
+def eval_shot(opponent_ship:list, user:dict, shot:list) -> bool:
+    """Fonction qui évalue un tir, elle met la valeur du tir (True/False) dans sa liste et retourne si le tir a touché un bateau
+
+    Args:
+        opponent_ship (list): La listes de bateaux adverses
+        user (dict): Le dictionaire de l'utilisateur
+        shot(list): Le tir à évaluer 
+
+    Returns:
+        bool: Si le tir a touché un bateau
+    """
+    
+    #Regardez si il n'y a pas de collision
+    if get_score(opponent_ship, [shot]) == 0:
+        
+        processed_shot = shot.copy()
+        #Signal que le tir n'a pas été réussi
+        processed_shot[0] = False
+        #Ajoute le tir à la liste
+        user["hit"].append(processed_shot)
+        
+        return False
+    
+    #Sinon, c'est qu'il y a une collision
+    
+    processed_shot = shot.copy()
+    #Signal que le tir a été réussi
+    processed_shot[0] = True
+    #Ajoute le tir à la liste
+    user["hit"].append(processed_shot)
+    
+    return True
 
 
+
+def eval_sank_ships(opponent_ships:list, user:dict)->bool:
+    """Fonction qui évalue si un bateau a été coulé
+
+    Args:
+        opponent_ship (list): Les bateaux ennemis
+        user (dict): Le dictionaire de l'utilisateur
+
+    Returns:
+        bool: Si un nouveau bateau a été coulé
+    """
+    
+    #Etablir la liste de tous les bateaux déjà coulés
+    pos_list = []
+    for ship in user["sank_ship"]:
+        pos_list.append([ship[2],ship[3]])
+        
+    #Etablir la liste des tirs
+    hits_pos = []
+    for shot in user["hit"]:
+        hits_pos.append([shot[1],shot[2]])
+    
+    
+    #Regarder pour chaques bateaux
+    for ship in opponent_ships:
+        x = ship[2]
+        y = ship[3]
+        #Regarder si le bateau n'est pas déjà coulé
+        if not [x,y] in pos_list:
+            counter = 0
+            
+            #Parcourir le bateau
+            for _ in range(ship[0]):
+                if [x,y] in hits_pos:
+                    counter += 1
+                
+                #Parcourir le bateau    
+                x += DIR[ship[1]][0]
+                y += DIR[ship[1]][1]
+                    
+            if counter == ship[0]:
+                #ajouter le bateau
+                user["sank_ship"].append(ship)
+                return True
+    
+    return False
+
+        
+        
+    
+        
+    
 
 
     
@@ -504,7 +720,7 @@ Répondez aux question quand vous êtes prêt pour commencer.""")
     for user in users:
     
         clear_screen()
-        place(users[user]["name"], users[user]["ship"])
+        place_ui(users[user]["name"], users[user]["ship"])
         clear_screen()
 
 
@@ -522,10 +738,10 @@ Répondez aux question quand vous êtes prêt pour commencer.""")
     print("  3. Un score est établie au cour de la partie;")
     print("     - Un bateau touché vaut 1 point")
     print("     - Un bateau coulé vaut 5 points")
-    print("     -> Le score permet un suivi des performance sur plusieurs partie en les additionnant")
+    print("     -> Le score permet un suivi des performances sur plusieurs parties en les additionnant")
     line()
     print("  4. Le premier joueur qui atteins le maximum de score (tous les bateaux coulés gagne la partie)")
-    
+    line()
     print(f">>> Le jeu va commencer par {users['user_1']['name']} !")
     input(f"Appuyez sur Entrée pour commencer ↵")
 
@@ -537,6 +753,11 @@ Répondez aux question quand vous êtes prêt pour commencer.""")
             name = users[user]["name"]
             ship = users[user]["ship"]
             hit = users[user]["hit"]
+            sank_ship = users[user]["sank_ship"]
+            
+
+            opponent_user = users["user_2"] if user == "user_1" else users["user_1"]
+            
             
             
             clear_screen()
@@ -551,6 +772,14 @@ Répondez aux question quand vous êtes prêt pour commencer.""")
             
             # Afficher la session de tir
             clear_screen()
+            shot = shoot_ui(name, ship, hit, opponent_user["hit"], sank_ship)
+            
+            #Regarder si le tir a été réussi
+            if eval_shot(opponent_user["ship"], users[user], shot):
+               pass
+                
+            
+            
                  
             
             
