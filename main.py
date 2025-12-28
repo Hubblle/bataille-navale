@@ -5,12 +5,12 @@ import os
 """
 Jeu de Bataille-navale
 
-BETA 1
+V 1
 
 Change-log:
-    Passage en Beta
-    (Fonctions de bases et boucle principale)
-
+    Ajout des bateaux du vrai jeu
+    Indications supplémentaires lors du tir
+    Ajout d'un symbole adapté pour les tirs loupés
 """
 
 ####################
@@ -19,7 +19,7 @@ Change-log:
 
 SIGN_DICT={
     "WATER" : '□ ', #Fond du tableau
-    "MISSED" : '□ ', # Tir raté
+    "MISSED" : 'O ', # Tir raté
     "TOUCHED" : 'X ', # Tir touché
     "SHIP" : '■ ', # Bateau
     "SANK_SHIP" : 'X '
@@ -71,9 +71,10 @@ victory = r"""
 
 
 BOATS = {
-    "Destroyer" : [5],
-    "Cruiser" : [3]
-    #"Navette" : [4]
+    "Porte-avions" : [5],
+    "Croiseur" : [4],
+    "Contre-torpilleur" : [3,3],
+    "Torpilleur": [2]
 }
 
 
@@ -517,7 +518,7 @@ def place_ui(name:str, ship_list:list)->None:
     
     #Fin de la fonction si l'utilisateur ne souhaite par recommencer
         
-def shoot_ui(name:str, ship_list:list, hit:list, opponent_hit:list, sank_ship:list)-> list:
+def shoot_ui(name:str, ship_list:list, hit:list, opponent_hit:list, opponent_name:str, opponent_sank:int, sank_ship:list)-> list:
     """Fonction qui permet de tirer un missile
 
     Args:
@@ -525,10 +526,12 @@ def shoot_ui(name:str, ship_list:list, hit:list, opponent_hit:list, sank_ship:li
         ship_list (list): La liste de ses bateaux
         hit (list): La liste de ses tirs
         opponent_hit (list): La liste des tirs de l'adversaire
+        opponent_name (str): Le nom de l'adversaire
+        opponent_sank (int): Le nombre de bateaux que l'adversaire a coulé
         sank_ship: la liste des bateaux coulés
     
     Returns:
-        list: Le tir non évalué
+        list: Le tir (non évalué)
     """
     
     def header():
@@ -539,8 +542,9 @@ def shoot_ui(name:str, ship_list:list, hit:list, opponent_hit:list, sank_ship:li
         
     def infos():
         print("## Comment tirer un missile ?")
-        print("  1. Entrez les coordonnées de la cible (format A1)")
-        print("  2. Confirmez les coordonnées et admirez !")
+        print("  1. Utilisez le plateau de visée")
+        print("  2. Entrez les coordonnées de la cible (format A1)")
+        print("  3. Confirmez les coordonnées et admirez !")
         
     header()
     line()
@@ -549,6 +553,7 @@ def shoot_ui(name:str, ship_list:list, hit:list, opponent_hit:list, sank_ship:li
     line()
     
     print("## Vos bateaux:")
+    print(f"{opponent_name} a coulé {opponent_sank} de vos bateaux !")
     print(make_board(ship_list, opponent_hit))
     
     line(2)
@@ -593,7 +598,7 @@ def shoot_ui(name:str, ship_list:list, hit:list, opponent_hit:list, sank_ship:li
     #Faire une copie du dictionaire original
     temp_sign = SIGN_DICT.copy()
     
-    temp_sign["SHIP"] = "🎇" #Modifier le symbole du bateau pour l'utiliser en tant que pointeur du tir
+    temp_sign["SHIP"] = "▣" #Modifier le symbole du bateau pour l'utiliser en tant que pointeur du tir
     
     temp_ship = [[1, 0, x, y]] # Bateau temporaire pour modéliser le tir
     
@@ -696,7 +701,7 @@ def eval_sank_ships(opponent_ships:list, user:dict)->bool:
 
 
 
-def end(user_name:str, users:dict):
+def end(user_name:str, users:dict)->None:
     """Fonction qui lance la séquence de fin du jeu
     
     Args:
@@ -804,7 +809,7 @@ Répondez aux question quand vous êtes prêt pour commencer.""")
             while True:
                 # Afficher la session de tir
                 clear_screen()
-                shot = shoot_ui(name, ship, hit, opponent_user["hit"], sank_ship)
+                shot = shoot_ui(name, ship, hit, opponent_user["hit"], opponent_user["name"], len(opponent_user["sank_ship"]), sank_ship)
                 
                 #Regarder si le tir a été réussi
                 if eval_shot(opponent_user["ship"], users[user], shot):
