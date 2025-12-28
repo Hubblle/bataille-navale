@@ -1,21 +1,15 @@
+
+
 import os
 
 """
 Jeu de Bataille-navale
 
-ALPHA 2
+BETA 1
 
-Fonctions:
-- Affichage du plateau de jeu avec information de coordination
-- Affichage des bateaux sur 4 axes
-- Affichage des tirs réussis ou ratés
-- Calcul du score
-- Définir une victoire à partir d'un score
-
-Fonction de la boucle principale:
-- Placement interactif des bateaux
-- Tir interactif
-- Evaluation du tir
+Change-log:
+    Passage en Beta
+    (Fonctions de bases et boucle principale)
 
 """
 
@@ -26,9 +20,9 @@ Fonction de la boucle principale:
 SIGN_DICT={
     "WATER" : '□ ', #Fond du tableau
     "MISSED" : '□ ', # Tir raté
-    "TOUCHED" : '⨂ ', # Tir touché
+    "TOUCHED" : 'X ', # Tir touché
     "SHIP" : '■ ', # Bateau
-    "SANK_SHIP" : '▨ '
+    "SANK_SHIP" : 'X '
 }
 
 
@@ -61,12 +55,24 @@ $$$$$$$  |\$$$$$$$ | \$$$$  |\$$$$$$$ |$$ |$$ |$$ |\$$$$$$$\        $$ |  $$ |\$
                                                              \______|                                                    
 """
 
+victory = r"""  
+ /$$    /$$ /$$             /$$               /$$                           /$$
+| $$   | $$|__/            | $$              |__/                          | $$
+| $$   | $$ /$$  /$$$$$$$ /$$$$$$    /$$$$$$  /$$  /$$$$$$   /$$$$$$       | $$
+|  $$ / $$/| $$ /$$_____/|_  $$_/   /$$__  $$| $$ /$$__  $$ /$$__  $$      | $$
+ \  $$ $$/ | $$| $$        | $$    | $$  \ $$| $$| $$  \__/| $$$$$$$$      |__/
+  \  $$$/  | $$| $$        | $$ /$$| $$  | $$| $$| $$      | $$_____/          
+   \  $/   | $$|  $$$$$$$  |  $$$$/|  $$$$$$/| $$| $$      |  $$$$$$$       /$$
+    \_/    |__/ \_______/   \___/   \______/ |__/|__/       \_______/      |__/
+    
+"""
+
 
 
 
 BOATS = {
-    "Destroyer" : [5]
-    #"Cruiser" : [3,3],
+    "Destroyer" : [5],
+    "Cruiser" : [3]
     #"Navette" : [4]
 }
 
@@ -209,7 +215,7 @@ def make_board(ships:list[list], hits:list[list], sank_ships:list = [],SIGNS : d
         #Récupérer les coordonnées
         x = ship[2]
         y = ship[3]
-        replace_at(board, x, y, SHIP)
+        replace_at(board, x, y, SANK_SHIP)
         
         #Repetition sur toute la longueur du bateau
         for _ in range(ship[0]-1): #On retire 1 car le premier carré est déjà tracé
@@ -688,18 +694,41 @@ def eval_sank_ships(opponent_ships:list, user:dict)->bool:
     
     return False
 
-        
-        
+
+
+def end(user_name:str, users:dict):
+    """Fonction qui lance la séquence de fin du jeu
     
+    Args:
+        user_name (str): L'utilisateur qui a gagné (doit être l'une des clés du dictionaire)
+        users (dict): Le dictionaire des utilisateurs
+    """
+    
+    clear_screen()
+    line(5)
+    print(victory)
+    line(2)
+    print(f"##### {users[user_name]["name"]} a gagné ! ####")
+    line()
+    print("-> Bilan de la partie")
+    for user in users:
+        print("  # "+users[user]["name"])
+        print("    -> Score: "+str(users[user]["score"]))
         
+    line()
+    user_in = input("C'est la fin du jeu, appuyez sur Entrée pour quitter, ou entrez 'R' puis Entrée pour rejouer >>> ")
+    
+    if user_in.capitalize() == 'R':
+        main()
+    
+    else:
+        exit()
+
+
     
 
 
-    
-
-
-
-if __name__ == "__main__":
+def main():
     clear_screen()
     
     print(logo)
@@ -735,7 +764,7 @@ Répondez aux question quand vous êtes prêt pour commencer.""")
     print("Le jeu va donc pouvoir commencer, mais avant, voici les règles: ")
     print("  1. Le jeu se déroule en tours-par-tours, les deux joueurs doivent se passer le clavier à la fin de leur tour, et ne pas regarder l'écran lorsque ce n'est pas leur tour.")
     print("  2. À chaque tour, le joueur va choisir une position ou lancer son missile, si il touche un bateau, il peu alors rejouer.")
-    print("  3. Un score est établie au cour de la partie;")
+    print("  3. Un score est établi au cour de la partie;")
     print("     - Un bateau touché vaut 1 point")
     print("     - Un bateau coulé vaut 5 points")
     print("     -> Le score permet un suivi des performances sur plusieurs parties en les additionnant")
@@ -770,24 +799,48 @@ Répondez aux question quand vous êtes prêt pour commencer.""")
             line(3)
             input(f">>> Appuyez sur Entrée lorsque c'est {name} qui a le clavier !")
             
-            # Afficher la session de tir
-            clear_screen()
-            shot = shoot_ui(name, ship, hit, opponent_user["hit"], sank_ship)
             
-            #Regarder si le tir a été réussi
-            if eval_shot(opponent_user["ship"], users[user], shot):
-               pass
+            
+            while True:
+                # Afficher la session de tir
+                clear_screen()
+                shot = shoot_ui(name, ship, hit, opponent_user["hit"], sank_ship)
                 
-            
-            
-                 
-            
-            
-            
-        
-        
-            
+                #Regarder si le tir a été réussi
+                if eval_shot(opponent_user["ship"], users[user], shot):
+                    #Actualiser le score
+                    users[user]["score"] = get_score(opponent_user["ship"], hit)
+                    
+                    if has_win(opponent_user["ship"], hit):
+                        end(user, users)
+                    
+                    if eval_sank_ships(opponent_user["ship"], users[user]):
+                        clear_screen()
+                        line(5)
+                        print(title(" Coulé !"))
+                        print("+6 points")
+                        print(f"Votre score: {users[user]["score"]}")
+                        line()
+                        input("Vous pouvez rejouer, appuyez sur Entrée pour continuer >>>")
+                        continue
+                        
+                    else:
+                        clear_screen()
+                        line(5)
+                        print(title(" Touché !"))
+                        print("+1 point")
+                        print(f"Votre score: {users[user]["score"]}")
+                        line()
+                        input("Vous pouvez rejouer, appuyez sur Entrée pour continuer >>>")
+                        continue
+                else:
+                    clear_screen()
+                    line(5)
+                    print(title("Loupé !"))     
+                    line()
+                    input("Appuyez sur Entrée pour continuer !")
+                    break
+                
+if __name__ == "__main__":
     
-        
-    
-    
+    main()
