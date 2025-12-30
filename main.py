@@ -5,10 +5,11 @@ import os
 """
 Jeu de Bataille-navale
 
-V 1.1
+V 1.2
 
 Change-log:
-    Algorithme de letter_to_num et de num_to_letter étendu pour être générique (marche avec tout x même >26)
+    Ajout de la possibilité pour l'utilisateur de choisir une taille de plateau personnalisée
+    Corrections orthographiques
 """
 
 ####################
@@ -411,7 +412,7 @@ def place_ui(name:str, ship_list:list)->None:
                 
               )
 
-    print(f"Bienvenue {name}, nous allons procéder au placement de vos batteaux !")
+    print(f"Bienvenue {name}, nous allons procéder au placement de vos bateaux !")
     print(title("Les Bateaux"))
     line(2)        
     
@@ -434,7 +435,7 @@ def place_ui(name:str, ship_list:list)->None:
             print(f"-> Longueur = {BOATS[boat][0]}")
             line()
             #affichage du plateau avec les bateaux actuels
-            print(make_board(ship_list, []))
+            print(make_board(ship_list, [],ln=COT))
             line()
             
             #afficher le tuto
@@ -476,7 +477,7 @@ def place_ui(name:str, ship_list:list)->None:
                 
                 line()
                 
-                print(make_board(ship_list, [[True,x,y]]))
+                print(make_board(ship_list, [[True,x,y]],ln=COT))
                 
                 infos()
                 
@@ -520,7 +521,7 @@ def place_ui(name:str, ship_list:list)->None:
     header()
     print(f"### {name} Voici le placement de vos bateaux !")
     line()
-    print(make_board(ship_list,[]))
+    print(make_board(ship_list,[],ln=COT))
     line(2)
     print("Vous pouvez:\n  -> Appuyer sur Entrée pour valider ↵\n  -> Appuyer sur R puis Entrée pour recommencer !")
     entry = input(">>> ")
@@ -568,12 +569,12 @@ def shoot_ui(name:str, ship_list:list, hit:list, opponent_hit:list, opponent_nam
     
     print("## Vos bateaux:")
     print(f"{opponent_name} a coulé {opponent_sank} de vos bateaux !")
-    print(make_board(ship_list, opponent_hit))
+    print(make_board(ship_list, opponent_hit,ln=COT))
     
     line(2)
     
     print("## Votre plateau de visée :")
-    print(make_board([], hit, sank_ship))
+    print(make_board([], hit, sank_ship,ln=COT))
     
     
     line()
@@ -616,7 +617,7 @@ def shoot_ui(name:str, ship_list:list, hit:list, opponent_hit:list, opponent_nam
     
     temp_ship = [[1, 0, x, y]] # Bateau temporaire pour modéliser le tir
     
-    print(make_board(temp_ship, hit, sank_ship, temp_sign))
+    print(make_board(temp_ship, hit, sank_ship, temp_sign,ln=COT))
     
     print("Appuyez sur Entrée pour confirmer le lancement du missile; ou entrez 'R' et appuyez sur Entrée pour replacer votre tir")
     
@@ -744,16 +745,59 @@ def end(user_name:str, users:dict)->None:
         exit()
 
 
+def choose_size_ui()->int:
+    """Fonction qui permet de choisir la taille du plateau
+
+    Returns:
+        int: La taille choisie
+    """
+    clear_screen()
+    print(logo)
+    line(2)
     
+    print("Entrez la valeur de coté que vous souhaitez:")
+    value = int(input(">>> "))
+    
+    line(2)
+    print("-> Voici un exemple de plateau de cette taille:")
+    print(make_board([],[],[],ln=value))
+    line(2)
+    
+    print("Voulez vous valider (Entrée) ou recommencer (R) ?")
+    resp = input(">>> ")
+    
+    if resp.capitalize() == "R":
+        return choose_size_ui()
+        
+    return value
+    
+    
+    
+
+#############################
+#### Fonction principale ####
+#############################
+
 
 
 def main():
+
     clear_screen()
     
     print(logo)
     print("""#### Bienvenue dans le jeu de Bataille navale !
 Répondez aux question quand vous êtes prêt pour commencer.""")
     line(2)
+    
+    resp=""
+    while not resp.capitalize() in ["O","N"]:
+        resp = input("Voulez vous choisir la taille du plateau ? (O/N) >>> ")
+    
+    if resp.capitalize() == "O":
+        global COT
+        COT = choose_size_ui()
+        
+        
     
     #Demande le nom des utilisateurs
     for i in range(2):
@@ -788,7 +832,7 @@ Répondez aux question quand vous êtes prêt pour commencer.""")
     print("     - Un bateau coulé vaut 5 points")
     print("     -> Le score permet un suivi des performances sur plusieurs parties en les additionnant")
     line()
-    print("  4. Le premier joueur qui atteins le maximum de score (tous les bateaux coulés gagne la partie)")
+    print("  4. Le premier joueur qui atteins le maximum de score (tous les bateaux coulés) gagne la partie")
     line()
     print(f">>> Le jeu va commencer par {users['user_1']['name']} !")
     input(f"Appuyez sur Entrée pour commencer ↵")
