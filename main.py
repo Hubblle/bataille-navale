@@ -454,14 +454,23 @@ def place_ui(name:str, ship_list:list)->None:
                 if x > COT:
                     print("Erreur; votre lettre dépasse le maximum !")
                     input("Appuyez sur Entrée pour recommencer ↵")
+
                 
                 elif y > COT:
                     print("Erreur votre nombre dépasse le maximum !")
                     input("Appuyez sur Entrée pour recommencer ↵")
+
                 
-                elif get_score(ship_list, [[False, x, y]]) != 0:
+                colision = False
+                for dx in [-1, 0, 1]:
+                    for dy in [-1, 0, 1]:
+                        if get_score(ship_list, [[False, x+dx, y+dy]]) != 0:
+                            colision = True
+                
+                if colision:
                     print("Erreur; votre bateau est en collision avec un autre !")
                     input("Appuyez sur Entrée pour recommencer ↵")
+
                 
                 else:
                     line()
@@ -821,7 +830,9 @@ Répondez aux question quand vous êtes prêt pour commencer.""")
         global COT
         COT = choose_size_ui()
         
-        
+    clear_screen()
+    print(logo)
+    line(2)
     
     #Demande le nom des utilisateurs
     for i in range(2):
