@@ -5,12 +5,10 @@ import os
 """
 Jeu de Bataille-navale
 
-V 1
+V 1.1
 
 Change-log:
-    Ajout des bateaux du vrai jeu
-    Indications supplémentaires lors du tir
-    Ajout d'un symbole adapté pour les tirs loupés
+    Algorithme de letter_to_num et de num_to_letter étendu pour être générique (marche avec tout x même >26)
 """
 
 ####################
@@ -129,18 +127,33 @@ def num_to_letter(num:int)->str:
         
     convert(num)
     return letter[0]
+
+
+
     
-def letter_to_num(letter:str)->int:
+def letter_to_num(letters:str)->int:
     """Une fonction qui va convertir une lettre du tableau en nombre
 
     Args:
-        letter (str): La lettre à convertir
+        letters (str): La lettre à convertir
 
     Returns:
         int: le numéro corespondant
     """
     
-    return LETTERS.index(letter)+1
+    #Transformer la sting en liste de char
+    char_list = list(letters)[::-1]
+    
+    number = 0
+    for i in range(len(char_list)):
+        number+=LETTERS.index(char_list[i].capitalize())*(26**i)
+        # On ajoute au nombre le nombre de fois la puissance de 26 selon le nombre de lettre total du nombre
+        # La valeur d'un nombre est de: (sa position dans l'alphabet) * (26^(sa position dans le nombre))
+        # La position dans le nombre est relative, par exemple, le A dans: ABC est en 2ème position (on commence à 0 car 26⁰ = 1)
+        
+    return number
+        
+        
 
 
 def replace_at(board:list[list], x:int, y:int, char:str)->list:
@@ -156,7 +169,8 @@ def replace_at(board:list[list], x:int, y:int, char:str)->list:
     """
     
     #Ajuste les valeurs pour les utiliser comme index de liste
-    x -= 1
+    
+    #On ne retire pas sur le x car on compte ici en base 26 avec l'aphabet, donc le A => première case, est déjà 0
     y -= 1
     
     board[y][x]=char
