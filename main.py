@@ -5,11 +5,10 @@ import os
 """
 Jeu de Bataille-navale
 
-V 1.2
+V 1.3
 
 Change-log:
-    Ajout de la possibilité pour l'utilisateur de choisir une taille de plateau personnalisée
-    Corrections orthographiques
+    Retirer la possibilité de placer des bateaux adjacents les un aux autres
 """
 
 ####################
@@ -496,12 +495,37 @@ def place_ui(name:str, ship_list:list)->None:
                     #Incrémenter les valeurs
                     final_x += DIR[direc][0]
                     final_y += DIR[direc][1]
+                
+                # Verifier les bateaux adjacent
+                if not colision:
+                    final_x = x
+                    final_y = y
+                    for _ in range(BOATS[boat][0]):
+                        # Regarder les positions adjacentes
+                        for dx in [-1, 0, 1]:
+                            for dy in [-1, 0, 1]:
+                                if dx == 0 and dy == 0:
+                                    continue
+                                    #On regarde pas le bloc lui même
+                                adj_x = final_x + dx
+                                adj_y = final_y + dy
+                                if 0 <= adj_x < COT and 0 <= adj_y < COT:
+                                    if get_score(ship_list, [[True, adj_x, adj_y]]) != 0:
+                                        colision = True
+                        
+                        final_x += DIR[direc][0]
+                        final_y += DIR[direc][1]
                     
                 if colision:
-                    print("Erreur: Votre bateau touche un autre bateau !")
+                    print("Erreur: Votre bateau touche ou est adjacent à un autre bateau !")
                     input("Appuyez sur Entrée pour recommencer ↵")
                     continue
-                    
+
+                final_x = x
+                final_y = y
+                for _ in range(BOATS[boat][0]):
+                    final_x += DIR[direc][0]
+                    final_y += DIR[direc][1]
 
                 if final_x < 0 or final_x > COT:
                     print("Erreur: Votre bateau sort du plateau !")
@@ -515,7 +539,7 @@ def place_ui(name:str, ship_list:list)->None:
                 else:
                     break
             #Ajouter le bateau à la liste:
-            ship_list.append([BOATS[boat][0], direc, x, y])
+            ship_list.append([BOATS[boat][0], direc, x, y])  
             
     clear_screen()
     header()
