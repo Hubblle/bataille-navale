@@ -5,10 +5,13 @@ import os
 """
 Jeu de Bataille-navale
 
-V 1.3
+V 2
 
 Change-log:
-    Retirer la possibilité de placer des bateaux adjacents les un aux autres
+    Ajout d'un traitement avancé des entrées utilisateur (evite un crash du jeu du à une faute de frappe)
+    Modification de la fonction de fin pour vider le dictionaire utilisateur avant de relancer une partie
+    Amelioration de l'interface
+    
 """
 
 ####################
@@ -442,23 +445,51 @@ def place_ui(name:str, ship_list:list)->None:
             
             #demander le début
             while True:
-                cor = input("Entrez les coordonnées du début du bateau (Format: A1) -> ")
+                raw_cor = input("Entrez les coordonnées du début du bateau (Format: A1) -> ")
                 #Traiter l'input
                 
-                letter = cor[0] #Première lettre
-                x = letter_to_num(letter.upper())
+                cor_list = list(raw_cor)
                 
-                y = int(cor[1:])
+                wrong_format = False
+                
+                for i in range(len(cor_list)):
+                    #Parcourir l'entrée jusqu'à trouver le nombre
+                    if cor_list[i].isdecimal():
+                        raw_x = "".join(cor_list[:i])
+                        raw_y = "".join(cor_list[i:])
+                        break
+                        
+                    if i == len(cor_list)-1:#Si on a fait toute la liste sans trouver de nombre
+                        wrong_format = True
+                    
+                if not wrong_format:
+                    try:
+                        x = letter_to_num(raw_x)
+                    except IndexError:
+                          wrong_format = True  
+                    
+                    try:
+                        y = int(raw_y)
+                    except ValueError:
+                        wrong_format = True
+                        
+                if wrong_format:
+                    print("Erreur; votre entrée n'est pas dans le bon format !")
+                    input("Appuyez sur Entrée pour recommencer ↵")
+                    continue
+                    
                 
                 #Verifier les maximums
                 if x > COT:
                     print("Erreur; votre lettre dépasse le maximum !")
                     input("Appuyez sur Entrée pour recommencer ↵")
+                    continue
 
                 
                 elif y > COT:
                     print("Erreur votre nombre dépasse le maximum !")
                     input("Appuyez sur Entrée pour recommencer ↵")
+                    continue
 
                 
                 colision = False
@@ -489,7 +520,19 @@ def place_ui(name:str, ship_list:list)->None:
                 
                 infos()
                 
-                direc = int(input("Entrez la direction du bateau (0/1/2/3) -> "))
+                # Saisir et valider la direction
+                try:
+                    direc_raw = input("Entrez la direction du bateau (0/1/2/3) -> ")
+                    direc = int(direc_raw)
+                except ValueError:
+                    print("Direction invalide. Entrez 0, 1, 2 ou 3.")
+                    input("Appuyez sur Entrée pour recommencer ↵")
+                    continue
+
+                if direc not in (0,1,2,3):
+                    print("Direction invalide. Entrez 0, 1, 2 ou 3.")
+                    input("Appuyez sur Entrée pour recommencer ↵")
+                    continue
                 
                 #Verifier que le bateau ne sort pas du plateau
                 final_x = x
@@ -613,14 +656,38 @@ def shoot_ui(name:str, ship_list:list, hit:list, opponent_hit:list, opponent_nam
     line()
     
     while True:
-        cor = input("Coordonnées >>> ")
-        
+        raw_cor = input("Coordonnées >>> ")
         #Traiter l'input
-                
-        letter = cor[0] #Première lettre
-        x = letter_to_num(letter.upper())
         
-        y = int(cor[1:])
+        cor_list = list(raw_cor)
+        
+        wrong_format = False
+        
+        for i in range(len(cor_list)):
+            #Parcourir l'entrée jusqu'à trouver le nombre
+            if cor_list[i].isdecimal():
+                raw_x = "".join(cor_list[:i])
+                raw_y = "".join(cor_list[i:])
+                break
+                
+            if i == len(cor_list)-1:#Si on a fait toute la liste sans trouver de nombre
+                wrong_format = True
+            
+        if not wrong_format:
+            try:
+                x = letter_to_num(raw_x)
+            except IndexError:
+                    wrong_format = True  
+            
+            try:
+                y = int(raw_y)
+            except ValueError:
+                wrong_format = True
+                
+        if wrong_format:
+            print("Erreur; votre entrée n'est pas dans le bon format !")
+            input("Appuyez sur Entrée pour recommencer ↵")
+            continue
         
         #Verifier les maximums
         if x > COT:
@@ -749,7 +816,7 @@ def eval_sank_ships(opponent_ships:list, user:dict)->bool:
 
 
 
-def end(user_name:str, users:dict)->None:
+def end(user_name:str, user_dict:dict)->None:
     """Fonction qui lance la séquence de fin du jeu
     
     Args:
@@ -761,17 +828,36 @@ def end(user_name:str, users:dict)->None:
     line(5)
     print(victory)
     line(2)
-    print(f"##### {users[user_name]["name"]} a gagné ! ####")
+    print(f"##### {user_dict[user_name]["name"]} a gagné ! ####")
     line()
     print("-> Bilan de la partie")
-    for user in users:
-        print("  # "+users[user]["name"])
-        print("    -> Score: "+str(users[user]["score"]))
+    for user in user_dict:
+        print("  # "+user_dict[user]["name"])
+        print("    -> Score: "+str(user_dict[user]["score"]))
         
     line()
     user_in = input("C'est la fin du jeu, appuyez sur Entrée pour quitter, ou entrez 'R' puis Entrée pour rejouer >>> ")
     
     if user_in.capitalize() == 'R':
+        global users
+        #Remettre le dictionaire des utilisateur à 0
+        users = {
+            "user_1":{
+                "name":"",
+                "ship" : [],
+                "hit" : [],
+                "sank_ship": [],
+                "score" : 0
+                    },
+            "user_2":{
+                "name":"",
+                "ship" : [],
+                "hit" : [],
+                "sank_ship": [],
+                "score" : 0
+                    }
+                }
+        
         main()
     
     else:
@@ -788,8 +874,16 @@ def choose_size_ui()->int:
     print(logo)
     line(2)
     
-    print("Entrez la valeur de coté que vous souhaitez:")
-    value = int(input(">>> "))
+    print("Entrez la valeur de coté que vous souhaitez (valeur en dessous de 26 recommandée):")
+    try:
+        raw_value = input(">>> ")
+        value = int(raw_value)
+    except ValueError:
+        print("Erreur, votre valeur doit être un nombre !")
+        while not raw_value.isdecimal():
+            raw_value = input(">>> ")
+        value=int(raw_value)
+
     
     line(2)
     print("-> Voici un exemple de plateau de cette taille:")
