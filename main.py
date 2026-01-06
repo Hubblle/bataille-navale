@@ -314,6 +314,8 @@ def has_win(opponent_ships:list[list], hits:list[list])->bool:
     
     return (sum(ship[0] for ship in opponent_ships)+5*len(opponent_ships) == get_score(opponent_ships, hits))
     
+    
+    
 def title(text:str)->str:
     """Une fonction qui permet de générer des titres encadrés
 
