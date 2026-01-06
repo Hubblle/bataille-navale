@@ -5,12 +5,11 @@ import os
 """
 Jeu de Bataille-navale
 
-V 2
+V 2.1
 
 Change-log:
-    Ajout d'un traitement avancé des entrées utilisateur (evite un crash du jeu du à une faute de frappe)
-    Modification de la fonction de fin pour vider le dictionaire utilisateur avant de relancer une partie
-    Amelioration de l'interface
+    Ajout d'un compteur de tour lors de la visée
+    Boucle for inutile retirée
     
 """
 
@@ -609,7 +608,7 @@ def place_ui(name:str, ship_list:list)->None:
     
     #Fin de la fonction si l'utilisateur ne souhaite par recommencer
         
-def shoot_ui(name:str, ship_list:list, hit:list, opponent_hit:list, opponent_name:str, opponent_sank:int, sank_ship:list)-> list:
+def shoot_ui(name:str, ship_list:list, hit:list, opponent_hit:list, opponent_name:str, opponent_sank:int, sank_ship:list, tourn:int)-> list:
     """Fonction qui permet de tirer un missile
 
     Args:
@@ -619,7 +618,8 @@ def shoot_ui(name:str, ship_list:list, hit:list, opponent_hit:list, opponent_nam
         opponent_hit (list): La liste des tirs de l'adversaire
         opponent_name (str): Le nom de l'adversaire
         opponent_sank (int): Le nombre de bateaux que l'adversaire a coulé
-        sank_ship: la liste des bateaux coulés
+        sank_ship (list): La liste des bateaux coulés
+        tourn (int): Le numéro du tour actuel
     
     Returns:
         list: Le tir (non évalué)
@@ -650,6 +650,7 @@ def shoot_ui(name:str, ship_list:list, hit:list, opponent_hit:list, opponent_nam
     line(2)
     
     print("## Votre plateau de visée :")
+    print(f"C'est le tour n°{tourn}")
     print(make_board([], hit, sank_ship,ln=COT))
     
     
@@ -929,12 +930,9 @@ Répondez aux question quand vous êtes prêt pour commencer.""")
     line(2)
     
     #Demande le nom des utilisateurs
-    for i in range(2):
-        if i == 0:
-            users["user_1"]["name"] = input("Entrez le nom du joueur 1: ")
-            line()
-        else:
-            users["user_2"]["name"] = input("Entrez le nom du joueur 2: ")
+
+    users["user_1"]["name"] = input("Entrez le nom du joueur 1: ")
+    users["user_2"]["name"] = input("Entrez le nom du joueur 2: ")
     
     
     #Placer les bateaux
@@ -953,6 +951,7 @@ Répondez aux question quand vous êtes prêt pour commencer.""")
     print(">>> Tous les bateaux sont placés !")
     line()
     
+    #Afficher les règles
     print("Le jeu va donc pouvoir commencer, mais avant, voici les règles: ")
     print("  1. Le jeu se déroule en tours-par-tours, les deux joueurs doivent se passer le clavier à la fin de leur tour, et ne pas regarder l'écran lorsque ce n'est pas leur tour.")
     print("  2. À chaque tour, le joueur va choisir une position ou lancer son missile, si il touche un bateau, il peu alors rejouer.")
@@ -968,8 +967,11 @@ Répondez aux question quand vous êtes prêt pour commencer.""")
 
     
     #Boucle principale
+    np = 0
     while True:
+        np+=1
         for user in users:
+            
             #Définir les variables
             name = users[user]["name"]
             ship = users[user]["ship"]
@@ -996,7 +998,7 @@ Répondez aux question quand vous êtes prêt pour commencer.""")
             while True:
                 # Afficher la session de tir
                 clear_screen()
-                shot = shoot_ui(name, ship, hit, opponent_user["hit"], opponent_user["name"], len(opponent_user["sank_ship"]), sank_ship)
+                shot = shoot_ui(name, ship, hit, opponent_user["hit"], opponent_user["name"], len(opponent_user["sank_ship"]), sank_ship, np)
                 
                 #Regarder si le tir a été réussi
                 if eval_shot(opponent_user["ship"], users[user], shot):
