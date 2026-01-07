@@ -716,7 +716,7 @@ def shoot_ui(name:str, ship_list:list, hit:list, opponent_hit:list, opponent_nam
     #Faire une copie du dictionaire original
     temp_sign = SIGN_DICT.copy()
     
-    temp_sign["SHIP"] = "▣" #Modifier le symbole du bateau pour l'utiliser en tant que pointeur du tir
+    temp_sign["SHIP"] = "▣ " #Modifier le symbole du bateau pour l'utiliser en tant que pointeur du tir
     
     temp_ship = [[1, 0, x, y]] # Bateau temporaire pour modéliser le tir
     
