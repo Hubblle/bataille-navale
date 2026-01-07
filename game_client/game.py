@@ -24,7 +24,7 @@ game_list = {}
 
 game_id = ""
 
-
+opponent = ""
 
 
 def get_game_list()->str:
@@ -62,10 +62,10 @@ def create_game():
     
     #Récupérer l'id de la partie
     global game_id
-    game_id : str = req.text
+    game_id = req.text
     
 
-def get_infos()->dict:
+def get_status()->dict:
     """Retourne le status général de la partie actuelle
     """
     global game_id
@@ -98,9 +98,9 @@ def send_status(user:User):
     Args:
         user (User): L'utilisateur actuel
     """
-    
-    Wb.web_client.post("https://api.nsi.quark-dev.com/play/"+game_id, user.to_json())
-    
+
+    req = Wb.web_client.post("https://api.nsi.quark-dev.com/play/"+game_id, json=user.to_json())
+    return req.text
     
 def get_infos():
     """Fonction qui demande le status de la partie, ainsi que les données de l’adversaire

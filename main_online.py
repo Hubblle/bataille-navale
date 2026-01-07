@@ -11,7 +11,26 @@ import game_client.game as game
 import game_client.Web_client as Wb
 import getpass
 
+lose=r"""
+ /$$$$$$$             /$$$$$$          /$$   /$$                          
+| $$__  $$           /$$__  $$        |__/  | $$                          
+| $$  \ $$  /$$$$$$ | $$  \__//$$$$$$  /$$ /$$$$$$    /$$$$$$             
+| $$  | $$ /$$__  $$| $$$$   |____  $$| $$|_  $$_/   /$$__  $$            
+| $$  | $$| $$$$$$$$| $$_/    /$$$$$$$| $$  | $$    | $$$$$$$$            
+| $$  | $$| $$_____/| $$     /$$__  $$| $$  | $$ /$$| $$_____/            
+| $$$$$$$/|  $$$$$$$| $$    |  $$$$$$$| $$  |  $$$$/|  $$$$$$$ /$$ /$$ /$$
+|_______/  \_______/|__/     \_______/|__/   \___/   \_______/|__/|__/|__/
+                                                                          
+"""
+
+
+
+user = None
+
 def main_online():
+    global user
+    
+    
     clear_screen()
     print(title("Gestion des comptes"))
     
@@ -68,7 +87,7 @@ def main_online():
                     break
                 
                 try:
-                    user : usr.User = usr.register(username)
+                    user = usr.register(username, mdp)
                     user.login(mdp)
                 except WrongFormat:
                     print("Le format est incorrect (mot de passe ou nom d'utilisateur vide)")
@@ -125,7 +144,7 @@ def main_online():
             return main_online()
 
         if option == "3":
-            pass
+            return main_menu()
         
         
         if not option in ["1", "4"]:
@@ -166,6 +185,8 @@ def main_online():
                 print("Une erreur s'est produite durant la connexion à cette partie ! (GameFull error)")
                 input("Appuyez sur Entrée pour recommencer ")
                 continue
+            
+            game.opponent = game.get_status().get("creator")
             break
         
     play_game()
@@ -182,10 +203,13 @@ def create_game():
     while True:
         sleep(0.5)
         #Si la partie est pleine on affiche le joueur qui a rejoin
-        infos = game.get_infos()
+        infos = game.get_status()
         if infos.get("full"):
             print(f"-> {infos.get("opponent")} a rejoin !")
             input("Appuyez sur entrée pour commencer à jouer; ")
+            break
+    game.opponent = infos.get("opponent")
+    return play_game()
             
         
 def play_game():
@@ -194,13 +218,11 @@ def play_game():
     global user
     
     clear_screen()
-    infos = game.get_infos()
     place_ui(user.username, user.ship)
-    game.send_status()
-    
-    print(">>> Tous les bateaux sont placés !")
+    game.send_status(user)
+
     line()
-    
+    clear_screen()
     #Afficher les règles
     print("Le jeu va donc pouvoir commencer, mais avant, voici les règles: ")
     print("  1. Le jeu se déroule en tours-par-tours, les deux joueurs doivent se passer le clavier à la fin de leur tour, et ne pas regarder l'écran lorsque ce n'est pas leur tour.")
@@ -212,14 +234,160 @@ def play_game():
     line()
     print("  4. Le premier joueur qui atteins le maximum de score (tous les bateaux coulés) gagne la partie")
     line()
-    print(f">>> En attente que {infos.get("opponent")} place ses bateaux !")
+    print(f">>> En attente que {game.opponent} place ses bateaux !")
 
     
     while True:
-        pass
+        sleep(0.5)
+        stats = game.get_infos()
         
+        #Si l'utilisateur a définie ses bateau la liste n'est plus vide
+        if len(stats[game.opponent]["ship"]) != 0:
+            break
+        
+    input("Tous les bateaux on été placés ! Appuyez sur Entrée pour continuer >>> ")
     
-    
+    #Boucle principale du jeu
+    while True:
+        # Récupérer les dernières infos de la partie
+        stats = game.get_infos()
+
+        opp_stats = stats.get(game.opponent, {"ship": [], "hit": [], "sank_ship": [], "score": 0})
+
+        #à qui est le tour
+        next_turn = stats.get("next_turn")
+
+        # Tour du joueur
+        if next_turn == user.username:
+
+
+            while True:
+                # Afficher la session de tir
+                user.shot = shoot_ui(user.username, user.ship, user.hit, opp_stats.get("hit", []), game.opponent, len(opp_stats.get("sank_ship", [])), user.sank_ship, stats.get("turn"))
+
+
+                # Envoyer le nouveau status au serveur
+                while True:
+                    try:
+                        req = game.send_status(user)
+                    except Exception:
+                        # Refaire
+                        continue
+                    break
+                
+                #Traiter la réponse:
+                touched = False
+                sank = False
+                if req == "touched": touched = True
+                
+                elif req == "sank": sank = True
+                
+                elif req == "win":
+                    clear_screen()
+                    line(5)
+                    print(victory)
+                    line(2)
+                    print(f"##### Vous avez gagné ! ####")
+                    line()
+                    print("-> Bilan de la partie")
+                    print("  # Vous")
+                    print("    -> Score: "+str(user.score))
+                    
+                    print("  # "+game.opponent)
+                    print("    -> Score: "+str(opp_stats["score"]))
+                        
+                    line()
+                    user_in = input("C'est la fin du jeu, appuyez sur Entrée pour quitter, ou entrez 'R' puis Entrée pour rejouer >>> ")
+                    if user_in.capitalize() == 'R':
+                        del user
+                        return main_online()
+                    
+                    else:
+                        exit()
+                                
+                else:
+                    clear_screen()
+                    line(5)
+                    print(title("Loupé !"))
+                    line()
+                    input("Appuyez sur Entrée pour continuer !")
+                    # Fin du tour
+                    break
+                
+                
+                #Actualiser les données
+                if touched or sank:
+                    stats=game.get_infos()
+                    
+                    user.hit = stats[user.username].get("hit")
+                    user.sank_ship = stats[user.username].get("sank_ship")
+                    user.score = stats[user.username].get("score")
+                    
+                if touched:
+                    clear_screen()
+                    line(5)
+                    print(title(" Touché !"))
+                    print("+1 point")
+                    print(f"Votre score: {user.score}")
+                    line()
+                    input("Vous pouvez rejouer, appuyez sur Entrée pour continuer >>>")
+                    continue
+                
+                elif sank:
+                    clear_screen()
+                    line(5)
+                    print(title(" Coulé !"))
+                    print("+6 points")
+                    print(f"Votre score: {user.score}")
+                    line()
+                    input("Vous pouvez rejouer, appuyez sur Entrée pour continuer >>>")
+                    continue
+                
+               
+
+        # Tour de l'adversaire : attendre que le serveur indique le retour du tour
+        else:
+            clear_screen()
+            print(title("En attente"))
+            stats = game.get_infos()
+            next_turn = stats.get("next_turn")
+            
+
+            print(f">>> C'est au tour de {next_turn}. En attente de la fin du tour...")
+            # Boucler sur la récupération des infos tant que ce n'est pas notre tour
+            while True:
+                sleep(0.8)
+                stats = game.get_infos()
+                
+                #Verifier la défaite
+                if stats.get("win")[0] == True:
+                    clear_screen()
+                    line(5)
+                    print(lose)
+                    line(2)
+                    print(f"##### Vous avez perdu.. ####")
+                    line()
+                    print("-> Bilan de la partie")
+                    print("  # Vous")
+                    print("    -> Score: "+str(user.score))
+                    
+                    print("  # "+game.opponent)
+                    print("    -> Score: "+str(stats[game.opponent]["score"]))
+                        
+                    line()
+                    user_in = input("C'est la fin du jeu, appuyez sur Entrée pour quitter, ou entrez 'R' puis Entrée pour rejouer >>> ")
+                    
+                    if user_in.capitalize() == 'R':
+                        del user
+                        return main_online()
+                    
+                    else:
+                        exit()
+                
+                next_turn = stats.get("next_turn")
+
+                if next_turn == user.username:
+                    break
 
 
 if __name__ == "__main__":

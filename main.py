@@ -1,15 +1,15 @@
 
 
 import os
+import main_online
 
 """
 Jeu de Bataille-navale
 
-V 2.1
+V 3
 
 Change-log:
-    Ajout d'un compteur de tour lors de la visée
-    Boucle for inutile retirée
+    Ajout du mode multi-joueur en ligne
     
 """
 
@@ -1036,7 +1036,27 @@ Répondez aux question quand vous êtes prêt pour commencer.""")
                     line()
                     input("Appuyez sur Entrée pour continuer !")
                     break
-                
+        
+        
+def main_menu():        
+    clear_screen()
+    print(logo)
+    line(2)
+
+    print("Sélectionnez le mode de jeu:")
+    print("  1. Multijoueur local")
+    print("  2. Multijoueur réseau")
+    line()
+
+    while True:
+        choice = input("Choisissez 1 ou 2: ")
+        if choice == "1":
+            main()
+        elif choice == "2":
+            main_online.main_online()
+        else:
+            print("Choix invalide, entrez 1 ou 2.")
+            
+            
 if __name__ == "__main__":
-    
-    main()
+    main_menu()

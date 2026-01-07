@@ -17,18 +17,20 @@ class User():
         self.username = username
         self.ship = []
         self.hit = []
-        self.sank_ship=[],
+        self.sank_ship=[]
         self.score=0
+        self.shot = None
         
     def to_json(self)->dict:
         """Retourne les données de l'utilisateur sous un format json valide
         """
         return {
-            "username":self.username,
+            "name":self.username,
             "ship": self.ship,
             "hit": self.hit,
             "sank_ship": self.sank_ship,
-            "score": self.score
+            "score": self.score,
+            "shot": self.shot
         }
         
         
