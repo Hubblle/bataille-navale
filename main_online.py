@@ -207,7 +207,7 @@ def create_game():
         #Si la partie est pleine on affiche le joueur qui a rejoin
         infos = game.get_status()
         if infos.get("full"):
-            print(f"-> {infos.get("opponent")} a rejoin !")
+            print(f"-> {infos.get('opponent')} a rejoin !")
             input("Appuyez sur entrée pour commencer à jouer; ")
             break
     game.opponent = infos.get("opponent")

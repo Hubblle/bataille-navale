@@ -831,7 +831,7 @@ def end(user_name:str, user_dict:dict)->None:
     line(5)
     print(victory)
     line(2)
-    print(f"##### {user_dict[user_name]["name"]} a gagné ! ####")
+    print(f"##### {user_dict[user_name]['name']} a gagné ! ####")
     line()
     print("-> Bilan de la partie")
     for user in user_dict:
@@ -1015,7 +1015,7 @@ Répondez aux question quand vous êtes prêt pour commencer.""")
                         line(5)
                         print(title(" Coulé !"))
                         print("+6 points")
-                        print(f"Votre score: {users[user]["score"]}")
+                        print(f"Votre score: {users[user]['score']}")
                         line()
                         input("Vous pouvez rejouer, appuyez sur Entrée pour continuer >>>")
                         continue
@@ -1025,7 +1025,7 @@ Répondez aux question quand vous êtes prêt pour commencer.""")
                         line(5)
                         print(title(" Touché !"))
                         print("+1 point")
-                        print(f"Votre score: {users[user]["score"]}")
+                        print(f"Votre score: {users[user]['score']}")
                         line()
                         input("Vous pouvez rejouer, appuyez sur Entrée pour continuer >>>")
                         continue
@@ -1060,3 +1060,4 @@ def main_menu():
             
 if __name__ == "__main__":
     main_menu()
+
