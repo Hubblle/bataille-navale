@@ -2,13 +2,11 @@
 Module utilisé pour les parties en multi-joueurs réseaux du jeu
 """
 
-from logging import info
 from time import sleep
 from main import *
 import game_client.User as usr
 from game_client.ClientExceptions import *
 import game_client.game as game
-import game_client.Web_client as Wb
 import getpass
 
 lose=r"""
@@ -91,10 +89,14 @@ def main_online():
                     user.login(mdp)
                 except WrongFormat:
                     print("Le format est incorrect (mot de passe ou nom d'utilisateur vide)")
+                    input("Appuyez sur entrée pour continuer >> ")
+                    continue
                     
                     
                 except UserAlreadyExist:
                     print("Ce nom d'utilisateur est déjà pris !")
+                    input("Appuyez sur entrée pour continuer >> ")
+                    continue
                 
                 else:
                     break
